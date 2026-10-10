@@ -76,7 +76,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <img
-                src="/icon.svg"
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/icon.svg`}
                 alt="بوتیک گلامور"
                 className="w-9 h-9 rounded-xl shadow-md shrink-0"
               />

@@ -128,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand / Logo */}
         <a href="#" className="flex items-center gap-2 sm:gap-3 group">
           <img
-            src="/icon.svg"
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/icon.svg`}
             alt="بوتیک گلامور"
             className="w-10 h-10 rounded-2xl shadow-md shadow-pink-500/25 group-hover:scale-105 transition-transform shrink-0"
           />
