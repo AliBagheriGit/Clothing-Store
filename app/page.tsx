@@ -19,11 +19,14 @@ import { AdminProductManager } from './components/AdminProductManager';
 import { UserAccountModal } from './components/UserAccountModal';
 import { PRODUCTS } from './mockData';
 import type { Product, CartItem, ProductCategory, ProductColor, User, UserOrder } from './types';
-import { toPersianDigits } from './utils';
+import { useLanguage } from './context/LanguageContext';
 
 import { SlidersHorizontal, CheckCircle2, Trash2 } from 'lucide-react';
 
 export default function Home() {
+  const { t, formatDigits, isRTL, language } = useLanguage();
+  const isEn = language === 'en';
+
   // 1. Products state with persistence
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
@@ -76,6 +79,16 @@ export default function Home() {
     } catch {}
   };
 
+  // Toast notification
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
+
   // Save user session
   const handleUserLogin = (user: User) => {
     setCurrentUser(user);
@@ -84,9 +97,9 @@ export default function Home() {
     } catch {}
 
     if (user.role === 'admin') {
-      showToast('خوش آمدید مدیر گرامی! پیشخوان مدیریت محصولات فعال شد.');
+      showToast(t.toasts.adminWelcome);
     } else {
-      showToast(`خوش آمدید، ${user.name} عزیز! حساب کاربری شما فعال است.`);
+      showToast(t.toasts.userWelcome(user.name));
     }
   };
 
@@ -96,10 +109,10 @@ export default function Home() {
       localStorage.removeItem('glamour_user_session');
     } catch {}
     setIsAdminManagerOpen(false);
-    showToast('با موفقیت از حساب کاربری خارج شدید.');
+    showToast(t.toasts.logoutSuccess);
   };
 
-  // Initial cart with a preloaded boutique item for immediate interactive experience
+  // Initial cart with a preloaded boutique item
   const [cart, setCart] = useState<CartItem[]>([
     {
       id: `${PRODUCTS[0].id}-${PRODUCTS[0].colors[0].name}-${PRODUCTS[0].sizes[0]}`,
@@ -119,31 +132,22 @@ export default function Home() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
-  // Toast notification
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-  };
-
-  // 2. Admin Handlers (Accessible only when currentUser.role === 'admin')
+  // 2. Admin Handlers
   const handleAddProduct = (newProduct: Product) => {
     if (currentUser?.role !== 'admin') {
-      alert('تنها مدیر سایت مجاز به افزودن محصول است.');
+      alert(isEn ? 'Only store administrators are authorized to add products.' : 'تنها مدیر سایت مجاز به افزودن محصول است.');
       return;
     }
     const updated = [newProduct, ...products];
     saveProducts(updated);
-    showToast(`کالای «${newProduct.name}» با موفقیت در سایت منتشر شد.`);
+    const pName = isEn && newProduct.englishName ? newProduct.englishName : newProduct.name;
+    showToast(isEn ? `Item "${pName}" published successfully.` : `کالای «${newProduct.name}» با موفقیت در سایت منتشر شد.`);
   };
 
   const handleRequestDelete = (productId: string) => {
     if (currentUser?.role !== 'admin') {
       setIsAccountOpen(true);
-      showToast('جهت حذف محصول از سایت، لطفاً با حساب کاربری مدیر وارد شوید.');
+      showToast(isEn ? 'Please log in with admin account to delete products.' : 'جهت حذف محصول از سایت، لطفاً با حساب کاربری مدیر وارد شوید.');
       return;
     }
     const target = products.find((p) => p.id === productId);
@@ -154,10 +158,11 @@ export default function Home() {
 
   const handleConfirmDelete = (productId: string) => {
     if (currentUser?.role !== 'admin') {
-      showToast('تنها مدیر سایت مجاز به حذف محصول است.');
+      showToast(isEn ? 'Only store administrators can delete products.' : 'تنها مدیر سایت مجاز به حذف محصول است.');
       return;
     }
     const target = products.find((p) => p.id === productId);
+    const targetName = target ? (isEn && target.englishName ? target.englishName : target.name) : '';
     const updated = products.filter((p) => p.id !== productId);
     saveProducts(updated);
     setCart((prev) => prev.filter((item) => item.product.id !== productId));
@@ -165,7 +170,7 @@ export default function Home() {
     if (quickViewProduct?.id === productId) {
       setQuickViewProduct(null);
     }
-    showToast(`کالای «${target?.name || ''}» با موفقیت از فروشگاه حذف شد.`);
+    showToast(t.toasts.deletedProduct(targetName));
   };
 
   const handleToggleStock = (productId: string) => {
@@ -177,10 +182,11 @@ export default function Home() {
         const nextStock = !p.inStock;
         const currentCount = p.stockCount !== undefined ? p.stockCount : (p.inStock ? 10 : 0);
         const nextCount = nextStock ? (currentCount > 0 ? currentCount : 10) : 0;
+        const pName = isEn && p.englishName ? p.englishName : p.name;
         showToast(
           nextStock
-            ? `«${p.name}» اکنون در انبار موجود شد (موجودی: ${nextCount} عدد).`
-            : `«${p.name}» به عنوان ناموجود ثبت شد.`
+            ? t.toasts.stockAvailable(pName, formatDigits(nextCount))
+            : t.toasts.stockUnavailable(pName)
         );
         return { ...p, inStock: nextStock, stockCount: nextCount };
       }
@@ -200,7 +206,7 @@ export default function Home() {
 
   const handleUpdateStockCount = (productId: string, delta: number) => {
     if (currentUser?.role !== 'admin') {
-      showToast('تنها مدیر سایت امکان تغییر موجودی انبار را دارد.');
+      showToast(isEn ? 'Only store admin can modify stock counts.' : 'تنها مدیر سایت امکان تغییر موجودی انبار را دارد.');
       return;
     }
     let targetName = '';
@@ -210,7 +216,7 @@ export default function Home() {
         const currentCount = p.stockCount !== undefined ? p.stockCount : (p.inStock ? 10 : 0);
         const nextCount = Math.max(0, currentCount + delta);
         const nextInStock = nextCount > 0;
-        targetName = p.name;
+        targetName = isEn && p.englishName ? p.englishName : p.name;
         newCountResult = nextCount;
         return {
           ...p,
@@ -237,9 +243,9 @@ export default function Home() {
     }
 
     if (newCountResult === 0) {
-      showToast(`موجودی «${targetName}» به پایان رسید و ناموجود شد.`);
+      showToast(t.toasts.stockZero(targetName));
     } else {
-      showToast(`موجودی «${targetName}» به ${newCountResult} عدد تغییر یافت.`);
+      showToast(t.toasts.stockChanged(targetName, formatDigits(newCountResult)));
     }
   };
 
@@ -249,7 +255,7 @@ export default function Home() {
     try {
       localStorage.removeItem('glamour_boutique_products');
     } catch {}
-    showToast('محصولات با موفقیت به کاتالوگ پیش‌فرض بازگردانده شدند.');
+    showToast(t.toasts.resetCatalog);
   };
 
   // 3. Filter & Sort logic
@@ -282,7 +288,7 @@ export default function Home() {
     quantity: number = 1
   ) => {
     if (!product.inStock) {
-      alert('این کالا متاسفانه در انبار ناموجود می‌باشد.');
+      alert(t.card.outOfStockNotice);
       return;
     }
 
@@ -309,7 +315,8 @@ export default function Home() {
       ];
     });
 
-    showToast(`«${product.name}» با موفقیت به سبد خرید افزوده شد.`);
+    const pName = isEn && product.englishName ? product.englishName : product.name;
+    showToast(t.toasts.addedToCart(pName));
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -332,13 +339,14 @@ export default function Home() {
 
   // 5. Wishlist Handlers
   const handleToggleWishlist = (product: Product) => {
+    const pName = isEn && product.englishName ? product.englishName : product.name;
     setWishlist((prev) => {
       const exists = prev.some((p) => p.id === product.id);
       if (exists) {
-        showToast(`«${product.name}» از لیست نشان‌شده‌ها حذف شد.`);
+        showToast(t.toasts.removedWishlist(pName));
         return prev.filter((p) => p.id !== product.id);
       } else {
-        showToast(`«${product.name}» به علاقه‌مندی‌ها اضافه شد ❤️`);
+        showToast(t.toasts.addedWishlist(pName));
         return [...prev, product];
       }
     });
@@ -356,14 +364,14 @@ export default function Home() {
   }, [cart]);
 
   const handleOrderComplete = () => {
-    // If a user is logged in, attach this order to their history
     if (currentUser) {
       const newOrder: UserOrder = {
         id: `ORD-${Math.floor(100 + Math.random() * 900)}`,
-        date: 'امروز',
+        date: isEn ? 'Today' : 'امروز',
         itemsCount: cart.reduce((a, b) => a + b.quantity, 0),
         totalAmount: totalCartAmount,
         status: 'در حال بسته‌بندی',
+        englishStatus: 'Packing',
         trackingCode: `GLM-${Math.floor(100000 + Math.random() * 900000)}`,
       };
       const updatedUser: User = {
@@ -399,7 +407,7 @@ export default function Home() {
         />
       )}
 
-      {/* 1. Header with Unified User Account Trigger */}
+      {/* 1. Header with Unified User Account Trigger & Language Selector */}
       <Header
         cartCount={totalCartCount}
         wishlistCount={wishlist.length}
@@ -415,7 +423,7 @@ export default function Home() {
         {/* 2. Hero Slider */}
         <HeroSlider />
 
-        {/* 3. Category Showcase ('Best For You' 5-column grid from theme) */}
+        {/* 3. Category Showcase ('Best For You' 5-column grid) */}
         <CategoryCards
           onSelectCategory={(cat) => setSelectedCategory(cat)}
           selectedCategory={selectedCategory}
@@ -424,35 +432,37 @@ export default function Home() {
         {/* 4. Featured Products Section */}
         <section id="featured-products" className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6">
           {/* Section Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-stone-100 gap-4 text-right">
+          <div className={`flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-stone-100 gap-4 ${
+            isRTL ? 'text-right' : 'text-left'
+          }`}>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-pink-600 font-bold text-xs sm:text-sm tracking-wider uppercase">
-                  انتخاب‌های ویژه بوتیک
+                  {t.products.tag}
                 </span>
                 {isAdmin && (
                   <span className="bg-stone-900 text-pink-400 text-[10px] font-bold px-2 py-0.5 rounded">
-                    پیشخوان مدیریت ادمین
+                    {t.products.adminBadge}
                   </span>
                 )}
               </div>
               <h2 className="text-2xl sm:text-4xl font-black text-stone-900 mt-1">
-                کالکشن تابستانه و محصولات منتخب
+                {t.products.title}
               </h2>
               <p className="text-stone-500 text-xs sm:text-sm mt-1">
-                نمایش {toPersianDigits(filteredProducts.length)} محصول آماده ارسال به سراسر ایران
+                {t.products.showingCount(formatDigits(filteredProducts.length))}
               </p>
             </div>
 
             {/* Filter Tabs */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
               {[
-                { id: 'all', label: 'همه محصولات' },
-                { id: 'women', label: 'پوشاک بانوان' },
-                { id: 'men', label: 'استایل آقایان' },
-                { id: 'shoes', label: 'کفش و صندل' },
-                { id: 'bags', label: 'کیف ساحلی' },
-                { id: 'accessories', label: 'اکسسوری' },
+                { id: 'all', label: t.products.allTab },
+                { id: 'women', label: t.products.womenTab },
+                { id: 'men', label: t.products.menTab },
+                { id: 'shoes', label: t.products.shoesTab },
+                { id: 'bags', label: t.products.bagsTab },
+                { id: 'accessories', label: t.products.accessoriesTab },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -473,13 +483,13 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-between mb-8 text-xs text-stone-600 bg-stone-50 p-3 rounded-xl border border-stone-200/60 gap-3">
             <div className="flex items-center gap-2">
               <SlidersHorizontal size={16} className="text-pink-600" />
-              <span className="font-bold text-stone-800">مرتب‌سازی:</span>
+              <span className="font-bold text-stone-800">{t.products.sortBy}</span>
               <div className="flex items-center gap-2">
                 {[
-                  { id: 'popular', label: 'محبوب‌ترین' },
-                  { id: 'newest', label: 'جدیدترین' },
-                  { id: 'price-asc', label: 'ارزان‌ترین' },
-                  { id: 'price-desc', label: 'گران‌ترین' },
+                  { id: 'popular', label: t.products.popular },
+                  { id: 'newest', label: t.products.newest },
+                  { id: 'price-asc', label: t.products.priceAsc },
+                  { id: 'price-desc', label: t.products.priceDesc },
                 ].map((s) => (
                   <button
                     key={s.id}
@@ -505,11 +515,11 @@ export default function Home() {
                 }}
                 className="bg-pink-600 hover:bg-pink-700 text-white font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs transition-colors cursor-pointer shadow-xs"
               >
-                <span>+ افزودن محصول به این لیست</span>
+                <span>{t.products.addProduct}</span>
               </button>
             ) : (
               <span className="hidden sm:inline text-stone-400">
-                ضمانت بازگشت وجه تا ۷ روز پس از تحویل
+                {t.products.guarantee}
               </span>
             )}
           </div>
@@ -533,16 +543,16 @@ export default function Home() {
 
           {filteredProducts.length === 0 && (
             <div className="py-16 text-center text-stone-400 space-y-2">
-              <p className="text-base font-bold text-stone-700">هیچ محصولی در این دسته‌بندی یافت نشد.</p>
+              <p className="text-base font-bold text-stone-700">{t.products.noProducts}</p>
               {isAdmin && (
                 <button
                   onClick={() => {
                     setAdminManagerTab('add');
                     setIsAdminManagerOpen(true);
                   }}
-                  className="mt-3 bg-pink-600 text-white px-5 py-2 rounded-xl text-xs font-bold"
+                  className="mt-3 bg-pink-600 text-white px-5 py-2 rounded-xl text-xs font-bold cursor-pointer"
                 >
-                  افزودن اولین کالا به این دسته
+                  {t.products.addFirst}
                 </button>
               )}
             </div>
@@ -564,7 +574,7 @@ export default function Home() {
 
       {/* --- MODALS & DRAWERS --- */}
 
-      {/* Unified User Account Modal (Role-Based for Customer & Admin) */}
+      {/* Unified User Account Modal */}
       <UserAccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
@@ -581,7 +591,7 @@ export default function Home() {
         }}
       />
 
-      {/* WordPress-style Admin Product Manager (Accessible by Admin) */}
+      {/* Admin Product Manager */}
       {isAdmin && (
         <AdminProductManager
           isOpen={isAdminManagerOpen}
@@ -648,9 +658,11 @@ export default function Home() {
 
       {/* Custom Delete Confirmation Modal */}
       {productPendingDelete && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn text-right">
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
           <div
-            className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-stone-200 space-y-4"
+            className={`bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-stone-200 space-y-4 ${
+              isRTL ? 'text-right' : 'text-left'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
@@ -659,14 +671,16 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-black text-stone-900 text-base">
-                  حذف محصول از سایت
+                  {t.deleteModal.title}
                 </h3>
-                <span className="text-xs text-stone-400">عملیات حذف مستقیم ویژه مدیر سایت</span>
+                <span className="text-xs text-stone-400">{t.deleteModal.subtitle}</span>
               </div>
             </div>
 
             <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
-              آیا از حذف محصول <strong className="text-stone-900 font-bold">«{productPendingDelete.name}»</strong> از ویترین و کاتالوگ فروشگاه اطمینان دارید؟ این عملیات بلافاصله اعمال خواهد شد.
+              {t.deleteModal.confirmText(
+                isEn && productPendingDelete.englishName ? productPendingDelete.englishName : productPendingDelete.name
+              )}
             </p>
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -675,7 +689,7 @@ export default function Home() {
                 onClick={() => setProductPendingDelete(null)}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 transition-colors cursor-pointer"
               >
-                انصراف
+                {t.deleteModal.cancel}
               </button>
               <button
                 type="button"
@@ -686,7 +700,7 @@ export default function Home() {
                 className="px-5 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/30 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Trash2 size={15} />
-                <span>بله، حذف از سایت</span>
+                <span>{t.deleteModal.confirm}</span>
               </button>
             </div>
           </div>
@@ -695,7 +709,11 @@ export default function Home() {
 
       {/* Toast Notification Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-stone-950/95 text-white px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xs border border-stone-800 flex items-center gap-3 animate-fadeIn text-right text-xs sm:text-sm">
+        <div className={`fixed bottom-6 ${
+          isRTL ? 'right-6' : 'left-6'
+        } z-50 bg-stone-950/95 text-white px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xs border border-stone-800 flex items-center gap-3 animate-fadeIn ${
+          isRTL ? 'text-right' : 'text-left'
+        } text-xs sm:text-sm`}>
           <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
             <CheckCircle2 size={18} />
           </div>

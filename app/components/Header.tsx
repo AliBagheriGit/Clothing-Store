@@ -13,11 +13,11 @@ import {
   Send,
   MessageCircle,
   Sparkles,
-  Lock,
 } from 'lucide-react';
 import { InstagramIcon } from './Icons';
-import { toPersianDigits } from '../utils';
-import type { User } from '../types';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { useLanguage } from '../context/LanguageContext';
+import type { User, ProductCategory } from '../types';
 
 interface HeaderProps {
   cartCount: number;
@@ -26,7 +26,7 @@ interface HeaderProps {
   onOpenCart: () => void;
   onOpenWishlist: () => void;
   onOpenSearch: () => void;
-  onSelectCategory: (category: any) => void;
+  onSelectCategory: (category: ProductCategory) => void;
   onOpenAccountModal: () => void;
 }
 
@@ -40,8 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectCategory,
   onOpenAccountModal,
 }) => {
-
-
+  const { t, formatDigits, isRTL, language } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -55,72 +54,74 @@ export const Header: React.FC<HeaderProps> = ({
               <a
                 href="#instagram"
                 className="hover:text-pink-400 transition-colors flex items-center gap-1"
-                title="اینستاگرام بوتیک"
+                title={t.topBar.instagram}
               >
                 <InstagramIcon size={14} />
-                <span className="hidden sm:inline">اینستاگرام</span>
+                <span className="hidden sm:inline">{t.topBar.instagram}</span>
               </a>
               <a
                 href="#telegram"
                 className="hover:text-sky-400 transition-colors flex items-center gap-1"
-                title="کانال تلگرام"
+                title={t.topBar.telegram}
               >
                 <Send size={14} />
-                <span className="hidden sm:inline">تلگرام</span>
+                <span className="hidden sm:inline">{t.topBar.telegram}</span>
               </a>
               <a
                 href="#whatsapp"
                 className="hover:text-emerald-400 transition-colors flex items-center gap-1"
-                title="واتساپ پشتیبانی"
+                title={t.topBar.whatsapp}
               >
                 <MessageCircle size={14} />
-                <span className="hidden sm:inline">واتساپ</span>
+                <span className="hidden sm:inline">{t.topBar.whatsapp}</span>
               </a>
             </div>
             <span className="text-stone-600 hidden md:inline">|</span>
             <div className="hidden md:flex items-center gap-3 text-stone-400">
               <a href="#about" className="hover:text-white transition-colors">
-                درباره بوتیک
+                {t.topBar.about}
               </a>
               <a href="#contact" className="hover:text-white transition-colors">
-                تماس با ما
+                {t.topBar.contact}
               </a>
               <a href="#faq" className="hover:text-white transition-colors">
-                راهنمای سایزبندی
+                {t.topBar.sizeGuide}
               </a>
             </div>
           </div>
 
-          {/* Contact & Currency/Lang */}
-          <div className="flex items-center gap-5">
+          {/* Contact & Language Selector */}
+          <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-3">
               <span className="flex items-center gap-1 text-stone-300">
                 <Mail size={13} className="text-pink-400" />
-                <span>support@glamour-boutique.ir</span>
+                <span>{t.topBar.supportEmail}</span>
               </span>
               <span className="text-stone-600">|</span>
               <span className="flex items-center gap-1 text-stone-300" dir="ltr">
                 <Phone size={13} className="text-pink-400" />
-                <span>۰۲۱-۲۲۴۵۸۹۹۰</span>
+                <span>{t.topBar.phone}</span>
               </span>
             </div>
-            <div className="flex items-center gap-2 bg-stone-800 px-2.5 py-0.5 rounded text-[11px] text-pink-300 font-medium">
-              <span>واحد پول: تومان</span>
-              <span>•</span>
-              <span>ایران (FA)</span>
+
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-1.5 bg-stone-800 px-2.5 py-0.5 rounded text-[11px] text-pink-300 font-medium">
+                <span>{t.topBar.currency}</span>
+              </div>
+              {/* Topbar Language Switcher */}
+              <LanguageSwitcher variant="topbar" />
             </div>
           </div>
         </div>
       </div>
-
 
       {/* 2. Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-4">
         {/* Mobile menu button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-stone-700 hover:text-black focus:outline-hidden"
-          aria-label="منوی موبایل"
+          className="lg:hidden p-2 text-stone-700 hover:text-black focus:outline-hidden cursor-pointer"
+          aria-label={t.header.mobileMenu}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -129,24 +130,24 @@ export const Header: React.FC<HeaderProps> = ({
         <a href="#" className="flex items-center gap-2 sm:gap-3 group">
           <img
             src="/icon.svg"
-            alt="بوتیک گلامور"
+            alt="Glamour Hub"
             className="w-10 h-10 rounded-2xl shadow-md shadow-pink-500/25 group-hover:scale-105 transition-transform shrink-0"
           />
           <div className="flex flex-col">
             <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-stone-900 font-sans flex items-center gap-1.5">
               GLAMOUR HUB
               <span className="text-pink-500 text-xs px-1.5 py-0.5 bg-pink-50 rounded-full border border-pink-200">
-                بوتیک
+                {t.header.boutiqueBadge}
               </span>
             </span>
             <span className="text-[11px] text-stone-500 font-medium tracking-wide">
-              بوتیک اختصاصی پوشاک و استایل تابستانه
+              {t.header.brandSub}
             </span>
           </div>
         </a>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-stone-700">
+        <nav className="hidden lg:flex items-center gap-6 xl:gap-7 text-sm font-semibold text-stone-700">
           <a
             href="#"
             onClick={(e) => {
@@ -155,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="text-pink-600 hover:text-pink-700 transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-pink-500"
           >
-            صفحه اصلی
+            {t.header.home}
           </a>
           <a
             href="#featured-products"
@@ -167,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="hover:text-pink-600 transition-colors"
           >
-            فروشگاه
+            {t.header.shop}
           </a>
           <a
             href="#featured-products"
@@ -179,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="hover:text-pink-600 transition-colors"
           >
-            کالکشن زنانه
+            {t.header.women}
           </a>
           <a
             href="#featured-products"
@@ -191,7 +192,7 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="hover:text-pink-600 transition-colors"
           >
-            استایل مردانه
+            {t.header.men}
           </a>
           <a
             href="#featured-products"
@@ -203,14 +204,14 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className="hover:text-pink-600 transition-colors"
           >
-            اکسسوری و کیف
+            {t.header.accessories}
           </a>
           <a
             href="#lookbook"
             className="hover:text-pink-600 transition-colors flex items-center gap-1 text-stone-600"
           >
             <Sparkles size={14} className="text-amber-500" />
-            <span>لوک‌بوک ۱۴۰۴</span>
+            <span>{t.header.lookbook}</span>
           </a>
           <a
             href="#featured-products"
@@ -223,17 +224,20 @@ export const Header: React.FC<HeaderProps> = ({
             className="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1 border border-rose-200"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-            تخفیف‌های ویژه ۵۰٪
+            {t.header.specialSale}
           </a>
         </nav>
 
         {/* Action Icons */}
         <div className="flex items-center gap-2 sm:gap-3 text-stone-700">
+          {/* Header Language Switcher Button */}
+          <LanguageSwitcher variant="header" />
+
           {/* Search Button */}
           <button
             onClick={onOpenSearch}
-            className="p-2 hover:bg-stone-100 rounded-full transition-colors relative"
-            title="جستجوی سریع محصولات"
+            className="p-2 hover:bg-stone-100 rounded-full transition-colors relative cursor-pointer"
+            title={t.header.searchTitle}
           >
             <Search size={20} />
           </button>
@@ -248,33 +252,33 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200'
                 : 'hover:bg-stone-100 text-stone-700'
             }`}
-            title={currentUser ? `حساب: ${currentUser.name}` : 'ورود یا ساخت حساب کاربری'}
+            title={currentUser ? `${t.header.account}: ${currentUser.name}` : t.header.account}
           >
             <UserIcon size={18} className={currentUser ? 'text-pink-600' : ''} />
             <span className="hidden sm:inline">
-              {currentUser ? currentUser.name : 'حساب کاربری'}
+              {currentUser ? currentUser.name : t.header.account}
             </span>
             {currentUser && (
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold hidden md:inline ${
-                currentUser.role === 'admin' ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'
-              }`}>
-                {currentUser.role === 'admin' ? 'مدیر' : 'کاربر'}
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold hidden md:inline ${
+                  currentUser.role === 'admin' ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'
+                }`}
+              >
+                {currentUser.role === 'admin' ? t.header.adminRole : t.header.userRole}
               </span>
             )}
           </button>
 
-
-
           {/* Wishlist Button */}
           <button
             onClick={onOpenWishlist}
-            className="p-2 hover:bg-pink-50 hover:text-pink-600 rounded-full transition-colors relative"
-            title="لیست علاقه‌مندی‌ها"
+            className="p-2 hover:bg-pink-50 hover:text-pink-600 rounded-full transition-colors relative cursor-pointer"
+            title={t.header.wishlistTitle}
           >
             <Heart size={20} />
             {wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-[11px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
-                {toPersianDigits(wishlistCount)}
+              <span className={`absolute -top-1 ${isRTL ? '-right-1' : '-left-1'} bg-pink-500 text-white text-[11px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white`}>
+                {formatDigits(wishlistCount)}
               </span>
             )}
           </button>
@@ -282,18 +286,18 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Cart Button */}
           <button
             onClick={onOpenCart}
-            className="flex items-center gap-2 bg-stone-900 hover:bg-pink-600 text-white px-3 sm:px-4 py-2 rounded-full transition-all shadow-sm group"
-            title="مشاهده سبد خرید"
+            className="flex items-center gap-2 bg-stone-900 hover:bg-pink-600 text-white px-3 sm:px-4 py-2 rounded-full transition-all shadow-sm group cursor-pointer"
+            title={t.header.cartTitle}
           >
             <div className="relative">
               <ShoppingBag size={19} className="group-hover:scale-110 transition-transform" />
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[11px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-stone-900">
-                  {toPersianDigits(cartCount)}
+                <span className={`absolute -top-2 ${isRTL ? '-right-2' : '-left-2'} bg-rose-500 text-white text-[11px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-stone-900`}>
+                  {formatDigits(cartCount)}
                 </span>
               )}
             </div>
-            <span className="text-xs font-bold hidden sm:inline">سبد خرید</span>
+            <span className="text-xs font-bold hidden sm:inline">{t.header.cartTitle}</span>
           </button>
         </div>
       </div>
@@ -301,15 +305,18 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 3. Mobile Navigation Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-stone-200 bg-white px-4 py-4 space-y-3 animate-fadeIn">
+          {/* Mobile Language Switcher */}
+          <LanguageSwitcher variant="mobile" />
+
           <div className="flex flex-col space-y-2 text-sm font-semibold text-stone-800">
             <button
               onClick={() => {
                 onSelectCategory('all');
                 setMobileMenuOpen(false);
               }}
-              className="text-right py-2 px-3 rounded hover:bg-stone-50 text-pink-600"
+              className={`${isRTL ? 'text-right' : 'text-left'} py-2 px-3 rounded hover:bg-stone-50 text-pink-600`}
             >
-              صفحه اصلی
+              {t.header.home}
             </button>
             <button
               onClick={() => {
@@ -317,9 +324,9 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileMenuOpen(false);
                 document.getElementById('featured-products')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-right py-2 px-3 rounded hover:bg-stone-50"
+              className={`${isRTL ? 'text-right' : 'text-left'} py-2 px-3 rounded hover:bg-stone-50`}
             >
-              کالکشن بانوان
+              {t.header.women}
             </button>
             <button
               onClick={() => {
@@ -327,9 +334,9 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileMenuOpen(false);
                 document.getElementById('featured-products')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-right py-2 px-3 rounded hover:bg-stone-50"
+              className={`${isRTL ? 'text-right' : 'text-left'} py-2 px-3 rounded hover:bg-stone-50`}
             >
-              استایل آقایان
+              {t.header.men}
             </button>
             <button
               onClick={() => {
@@ -337,9 +344,9 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileMenuOpen(false);
                 document.getElementById('featured-products')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-right py-2 px-3 rounded hover:bg-stone-50"
+              className={`${isRTL ? 'text-right' : 'text-left'} py-2 px-3 rounded hover:bg-stone-50`}
             >
-              صندل و کفش
+              {t.products.shoesTab}
             </button>
             <button
               onClick={() => {
@@ -347,9 +354,9 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileMenuOpen(false);
                 document.getElementById('featured-products')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-right py-2 px-3 rounded hover:bg-stone-50"
+              className={`${isRTL ? 'text-right' : 'text-left'} py-2 px-3 rounded hover:bg-stone-50`}
             >
-              کیف ساحلی و دستی
+              {t.products.bagsTab}
             </button>
             <button
               onClick={() => {
@@ -357,21 +364,21 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileMenuOpen(false);
                 document.getElementById('featured-products')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-right py-2 px-3 rounded hover:bg-stone-50"
+              className={`${isRTL ? 'text-right' : 'text-left'} py-2 px-3 rounded hover:bg-stone-50`}
             >
-              اکسسوری و عینک
+              {t.header.accessories}
             </button>
           </div>
         </div>
       )}
 
-      {/* 4. Announcement Bar (The Pink strip from the theme) */}
+      {/* 4. Announcement Bar */}
       <div className="bg-pink-600 text-white text-xs sm:text-sm py-2 px-4 text-center font-medium shadow-inner flex items-center justify-center gap-2">
         <span className="hidden sm:inline">🌸</span>
         <span>
-          حراج بزرگ تابستانه بوتیک: تا <strong>۵۰٪ تخفیف</strong> روی تمام پیراهن‌های خنک، ست‌های لینن و لباس‌های ساحلی! کد تخفیف:{' '}
+          {t.announcement.text}{' '}
           <span className="bg-white text-pink-600 px-2 py-0.5 rounded font-mono font-bold tracking-wider mx-1">
-            SUMMER50
+            {t.announcement.code}
           </span>
         </span>
         <span className="hidden sm:inline">🌸</span>

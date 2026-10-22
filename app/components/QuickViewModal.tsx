@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { X, Star, Check, ShoppingBag, ShieldCheck, RefreshCw, Truck, Trash2 } from 'lucide-react';
 import { Product, ProductColor } from '../types';
-import { formatPrice, toPersianDigits } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -24,6 +24,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   onDeleteProduct,
   onUpdateStockCount,
 }) => {
+  const { t, formatPrice, formatDigits, isRTL, language } = useLanguage();
+  const isEn = language === 'en';
+
   if (!isOpen || !product) return null;
 
   const stock = product.stockCount !== undefined ? product.stockCount : (product.inStock ? 10 : 0);
@@ -33,6 +36,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0]);
   const [quantity, setQuantity] = useState<number>(1);
   const [activeImage, setActiveImage] = useState<string>(product.image);
+
+  const displayName = isEn && product.englishName ? product.englishName : product.name;
+  const displayTag = isEn && product.englishTag ? product.englishTag : (product.tag || t.quickView.tagDefault);
+  const displayDesc = isEn && product.englishDescription ? product.englishDescription : product.description;
+  const displayMaterial = isEn && product.englishMaterial ? product.englishMaterial : product.material;
+  const displaySizes = (isEn && product.englishSizes && product.englishSizes.length === product.sizes.length)
+    ? product.englishSizes
+    : product.sizes;
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
@@ -44,14 +55,16 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
       {/* Modal Container */}
       <div
-        className="relative bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col md:flex-row text-right"
+        className={`relative bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col md:flex-row ${
+          isRTL ? 'text-right' : 'text-left'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 z-20 bg-white/90 hover:bg-white text-stone-700 hover:text-black p-2 rounded-full shadow-md transition-colors"
-          aria-label="بستن"
+          className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} z-20 bg-white/90 hover:bg-white text-stone-700 hover:text-black p-2 rounded-full shadow-md transition-colors cursor-pointer`}
+          aria-label={t.quickView.close}
         >
           <X size={20} />
         </button>
@@ -64,8 +77,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               style={{ backgroundImage: `url(${activeImage})` }}
             />
             {product.discountPercent && (
-              <span className="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                {toPersianDigits(product.discountPercent)}٪ تخفیف
+              <span className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md`}>
+                {formatDigits(product.discountPercent)}% {t.card.off}
               </span>
             )}
           </div>
@@ -77,7 +90,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 <button
                   key={idx}
                   onClick={() => setActiveImage(img)}
-                  className={`w-14 h-18 rounded-lg overflow-hidden border-2 transition-all ${
+                  className={`w-14 h-18 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
                     activeImage === img ? 'border-pink-600 scale-105' : 'border-transparent opacity-70'
                   }`}
                 >
@@ -96,12 +109,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           {/* Header */}
           <div>
             <span className="text-xs font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full">
-              {product.tag || 'کالکشن تابستانه'}
+              {displayTag}
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-stone-900 mt-2 leading-tight">
-              {product.name}
+              {displayName}
             </h2>
-            {product.englishName && (
+            {!isEn && product.englishName && (
               <p className="text-xs text-stone-400 font-sans tracking-wide mt-0.5">
                 {product.englishName}
               </p>
@@ -119,10 +132,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 ))}
               </div>
               <span className="text-xs font-bold text-stone-700">
-                {toPersianDigits(product.rating)}
+                {formatDigits(product.rating)}
               </span>
               <span className="text-xs text-stone-400">
-                ({toPersianDigits(product.reviewsCount)} نظر ثبت شده)
+                ({formatDigits(product.reviewsCount)} {t.quickView.reviews})
               </span>
             </div>
           </div>
@@ -130,7 +143,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           {/* Pricing */}
           <div className="bg-stone-50 p-3.5 rounded-xl flex items-center justify-between border border-stone-200/70">
             <div>
-              <span className="text-xs text-stone-500 block">قیمت ویژه:</span>
+              <span className="text-xs text-stone-500 block">
+                {isEn ? 'Special Price:' : 'قیمت ویژه:'}
+              </span>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black text-pink-600">
                   {formatPrice(product.price)}
@@ -142,33 +157,41 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 )}
               </div>
             </div>
-            <span className="text-xs text-emerald-700 font-bold bg-emerald-100 px-2.5 py-1 rounded-full">
-              موجود در انبار بوتیک
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+              stock > 0
+                ? 'text-emerald-700 bg-emerald-100'
+                : 'text-rose-700 bg-rose-100'
+            }`}>
+              {stock > 0 ? (isEn ? 'In Stock' : 'موجود در انبار بوتیک') : t.card.outOfStockBadge}
             </span>
           </div>
 
           {/* Description & Material */}
           <div>
-            <p className="text-stone-600 text-sm leading-relaxed">{product.description}</p>
+            <p className="text-stone-600 text-sm leading-relaxed">{displayDesc}</p>
             <div className="mt-2 text-xs text-stone-500 bg-stone-100/80 p-2 rounded-lg">
-              <strong className="text-stone-800">جنس و الیاف: </strong>
-              {product.material}
+              <strong className="text-stone-800">{isEn ? 'Material & Fabric: ' : 'جنس و الیاف: '}</strong>
+              {displayMaterial}
             </div>
           </div>
 
           {/* Color Selector */}
           <div>
             <label className="text-xs font-bold text-stone-800 block mb-2">
-              انتخاب رنگ: <span className="text-pink-600 font-medium">{selectedColor.name}</span>
+              {t.quickView.colors}{' '}
+              <span className="text-pink-600 font-medium">
+                {isEn && selectedColor.englishName ? selectedColor.englishName : selectedColor.name}
+              </span>
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               {product.colors.map((c, i) => {
                 const isSelected = selectedColor.name === c.name;
+                const cName = isEn && c.englishName ? c.englishName : c.name;
                 return (
                   <button
                     key={i}
                     onClick={() => setSelectedColor(c)}
-                    className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                    className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
                       isSelected
                         ? 'border-pink-600 bg-pink-50 text-pink-700 ring-1 ring-pink-500'
                         : 'border-stone-200 hover:border-stone-400 text-stone-700'
@@ -178,8 +201,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                       className="w-4 h-4 rounded-full border border-stone-300"
                       style={{ backgroundColor: c.hex }}
                     />
-                    <span>{c.name}</span>
-                    {isSelected && <Check size={14} className="text-pink-600 mr-1" />}
+                    <span>{cName}</span>
+                    {isSelected && <Check size={14} className="text-pink-600" />}
                   </button>
                 );
               })}
@@ -188,15 +211,16 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
           {/* Size Selector */}
           <div>
-            <label className="text-xs font-bold text-stone-800 block mb-2">انتخاب سایز:</label>
+            <label className="text-xs font-bold text-stone-800 block mb-2">{t.quickView.sizes}</label>
             <div className="flex flex-wrap gap-2">
-              {product.sizes.map((s, i) => {
-                const isSelected = selectedSize === s;
+              {displaySizes.map((s, i) => {
+                const originalSize = product.sizes[i] || s;
+                const isSelected = selectedSize === originalSize || selectedSize === s;
                 return (
                   <button
                     key={i}
-                    onClick={() => setSelectedSize(s)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    onClick={() => setSelectedSize(originalSize)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
                         : 'border-stone-200 text-stone-700 hover:border-stone-400 bg-white'
@@ -215,16 +239,16 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             <div className="flex items-center border border-stone-200 rounded-xl bg-stone-50 overflow-hidden">
               <button
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="w-9 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-200 font-bold text-lg"
+                className="w-9 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-200 font-bold text-lg cursor-pointer"
               >
                 -
               </button>
               <span className="w-10 text-center font-bold text-sm text-stone-800">
-                {toPersianDigits(quantity)}
+                {formatDigits(quantity)}
               </span>
               <button
                 onClick={() => setQuantity((q) => q + 1)}
-                className="w-9 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-200 font-bold text-lg"
+                className="w-9 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-200 font-bold text-lg cursor-pointer"
               >
                 +
               </button>
@@ -236,7 +260,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 disabled
                 className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 px-6 rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <span>متاسفانه این کالا در انبار ناموجود است</span>
+                <span>{t.quickView.outOfStock}</span>
               </button>
             ) : (
               <button
@@ -244,22 +268,22 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-pink-600/30 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 cursor-pointer"
               >
                 <ShoppingBag size={18} />
-                <span>افزودن به سبد خرید</span>
+                <span>{t.quickView.addToCart}</span>
               </button>
             )}
           </div>
 
-          {/* Admin Management Section: Stock Adjuster & Delete */}
+          {/* Admin Management Section */}
           {isAdmin && (
             <div className="p-3.5 bg-stone-950 text-white rounded-2xl border border-stone-800 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-stone-200">
-                  مدیریت موجودی کالا (ویژه مدیر):
+                  {isEn ? 'Stock Control (Admin):' : 'مدیریت موجودی کالا (ویژه مدیر):'}
                 </span>
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
                   stock > 0 ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'
                 }`}>
-                  {stock > 0 ? 'موجود در انبار' : 'ناموجود'}
+                  {stock > 0 ? t.card.inStock : t.card.outOfStock}
                 </span>
               </div>
 
@@ -269,18 +293,18 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                     type="button"
                     onClick={() => onUpdateStockCount?.(product.id, -1)}
                     className="w-8 h-8 flex items-center justify-center text-stone-300 hover:text-white hover:bg-stone-800 font-black text-sm cursor-pointer"
-                    title="کاهش موجودی (-۱)"
+                    title="-1"
                   >
                     -
                   </button>
-                  <span className="w-16 text-center text-xs font-black text-amber-400">
-                    {toPersianDigits(stock)} عدد
+                  <span className="w-20 text-center text-xs font-black text-amber-400">
+                    {formatDigits(stock)} {isEn ? 'pcs' : 'عدد'}
                   </span>
                   <button
                     type="button"
                     onClick={() => onUpdateStockCount?.(product.id, 1)}
                     className="w-8 h-8 flex items-center justify-center text-stone-300 hover:text-white hover:bg-stone-800 font-black text-sm cursor-pointer"
-                    title="افزایش موجودی (+۱)"
+                    title="+1"
                   >
                     +
                   </button>
@@ -294,10 +318,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                       onClose();
                     }}
                     className="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                    title="حذف این محصول از سایت"
+                    title={t.card.deleteAdmin}
                   >
                     <Trash2 size={14} />
-                    <span>حذف از سایت</span>
+                    <span>{t.card.delete}</span>
                   </button>
                 )}
               </div>
@@ -308,15 +332,15 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           <div className="pt-4 border-t border-stone-100 grid grid-cols-3 gap-2 text-center text-[11px] text-stone-500">
             <div className="flex flex-col items-center gap-1">
               <Truck size={16} className="text-pink-600" />
-              <span>ارسال سریع سراسری</span>
+              <span>{t.trust[0].title}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <RefreshCw size={16} className="text-pink-600" />
-              <span>۷ روز ضمانت تعویض</span>
+              <span>{t.trust[1].title}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <ShieldCheck size={16} className="text-pink-600" />
-              <span>۱۰۰٪ الیاف طبیعی</span>
+              <span>{t.trust[2].title}</span>
             </div>
           </div>
         </div>

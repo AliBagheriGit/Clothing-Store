@@ -11,7 +11,6 @@ import {
   Sparkles,
   AlertTriangle,
   RotateCcw,
-  Tag,
   Search,
   CheckCircle2,
   UploadCloud,
@@ -19,7 +18,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Product, ProductCategory, ProductColor } from '../types';
-import { formatPrice, toPersianDigits } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AdminProductManagerProps {
   isOpen: boolean;
@@ -34,16 +33,16 @@ interface AdminProductManagerProps {
 }
 
 const PRESET_COLORS: ProductColor[] = [
-  { name: 'کرم نسکافه‌ای', hex: '#d4c4b5' },
-  { name: 'سفید صدفی', hex: '#fdfbf7' },
-  { name: 'مشکی کلاسیک', hex: '#1e1e1e' },
-  { name: 'سبز سدری', hex: '#8a9a86' },
-  { name: 'آبی آسمانی', hex: '#bed4e8' },
-  { name: 'عسلی کاراملی', hex: '#9e623b' },
-  { name: 'صورتی خاکی', hex: '#d9a5b3' },
+  { name: 'کرم نسکافه‌ای', englishName: 'Warm Latte', hex: '#d4c4b5' },
+  { name: 'سفید صدفی', englishName: 'Pearl White', hex: '#fdfbf7' },
+  { name: 'مشکی کلاسیک', englishName: 'Classic Black', hex: '#1e1e1e' },
+  { name: 'سبز سدری', englishName: 'Sage Green', hex: '#8a9a86' },
+  { name: 'آبی آسمانی', englishName: 'Sky Blue', hex: '#bed4e8' },
+  { name: 'عسلی کاراملی', englishName: 'Caramel Honey', hex: '#9e623b' },
+  { name: 'صورتی خاکی', englishName: 'Dusty Rose', hex: '#d9a5b3' },
 ];
 
-const ALL_SIZES = ['Free Size', 'S', 'M', 'L', 'XL', '2XL', '۳۷', '۳۸', '۳۹', '۴۰', '۴۱', '۴۲', '۴۳'];
+const ALL_SIZES = ['Free Size', 'S', 'M', 'L', 'XL', '2XL', '37', '38', '39', '40', '41', '42', '43'];
 
 export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   isOpen,
@@ -56,6 +55,9 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   onUpdateStockCount,
   onResetToDefaults,
 }) => {
+  const { t, formatPrice, formatDigits, isRTL, language } = useLanguage();
+  const isEn = language === 'en';
+
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'settings'>(initialTab);
   const [searchFilter, setSearchFilter] = useState('');
 
@@ -65,8 +67,12 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const [category, setCategory] = useState<ProductCategory>('women');
   const [price, setPrice] = useState<string>('1200000');
   const [originalPrice, setOriginalPrice] = useState<string>('1500000');
-  const [material, setMaterial] = useState('۱۰۰٪ لینن ارگانیک اعلا');
-  const [description, setDescription] = useState('پارچه باکیفیت و تنفس‌پذیر تابستانه، فوق‌العاده خنک و سبک مناسب روزهای گرم.');
+  const [material, setMaterial] = useState(isEn ? '100% Organic Linen' : '۱۰۰٪ لینن ارگانیک اعلا');
+  const [description, setDescription] = useState(
+    isEn
+      ? 'Premium breathable summer fabric, exceptionally cooling and lightweight for sunny days.'
+      : 'پارچه باکیفیت و تنفس‌پذیر تابستانه، فوق‌العاده خنک و سبک مناسب روزهای گرم.'
+  );
   const [imageUrl, setImageUrl] = useState<string>('');
   const [imageFileName, setImageFileName] = useState<string>('');
   const [imageFileSize, setImageFileSize] = useState<string>('');
@@ -77,24 +83,24 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const [selectedColors, setSelectedColors] = useState<ProductColor[]>([PRESET_COLORS[0], PRESET_COLORS[1]]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(['M', 'L', 'XL']);
   const [initialStockCount, setInitialStockCount] = useState<number>(15);
-  const [tag, setTag] = useState('جدید');
+  const [tag, setTag] = useState(isEn ? 'NEW' : 'جدید');
   const [formSuccess, setFormSuccess] = useState(false);
 
   if (!isOpen) return null;
 
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setUploadError('لطفاً یک فایل تصویری معتبر (JPG، PNG یا WEBP) انتخاب کنید.');
+      setUploadError(isEn ? 'Please choose a valid image file (JPG, PNG, WEBP).' : 'لطفاً یک فایل تصویری معتبر (JPG، PNG یا WEBP) انتخاب کنید.');
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
-      setUploadError('حجم فایل نباید بیشتر از ۸ مگابایت باشد.');
+      setUploadError(isEn ? 'File size must not exceed 8 MB.' : 'حجم فایل نباید بیشتر از ۸ مگابایت باشد.');
       return;
     }
     setUploadError('');
     const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
     setImageFileName(file.name);
-    setImageFileSize(`${sizeMB} مگابایت`);
+    setImageFileSize(`${sizeMB} MB`);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -130,7 +136,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
     if (!name.trim()) return;
 
     if (!imageUrl) {
-      setUploadError('لطفاً ابتدا عکس یا تصویر محصول را بارگذاری فرمایید.');
+      setUploadError(isEn ? 'Please upload a product photo.' : 'لطفاً ابتدا عکس یا تصویر محصول را بارگذاری فرمایید.');
       return;
     }
 
@@ -149,7 +155,9 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
       image: imageUrl,
       gallery: [imageUrl],
       description: description.trim(),
+      englishDescription: description.trim(),
       material: material.trim(),
+      englishMaterial: material.trim(),
       colors: selectedColors,
       sizes: selectedSizes,
       rating: 5.0,
@@ -159,6 +167,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
       inStock: initialStockCount > 0,
       stockCount: initialStockCount,
       tag: tag || undefined,
+      englishTag: tag || undefined,
     };
 
     onAddProduct(newProd);
@@ -182,9 +191,11 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-fadeIn text-right">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-fadeIn">
       <div
-        className="relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden max-h-[94vh] flex flex-col border border-stone-200"
+        className={`relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden max-h-[94vh] flex flex-col border border-stone-200 ${
+          isRTL ? 'text-right' : 'text-left'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
@@ -195,13 +206,15 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
             </div>
             <div>
               <h2 className="font-extrabold text-base sm:text-lg flex items-center gap-2">
-                <span>پیشخوان وردپرسی مدیریت بوتیک</span>
+                <span>{isEn ? 'WordPress-Style Boutique Management' : 'پیشخوان وردپرسی مدیریت بوتیک'}</span>
                 <span className="text-[11px] bg-stone-800 text-pink-400 px-2 py-0.5 rounded font-mono">
-                  نسخه مدیریت فروشگاه
+                  {isEn ? 'Store Admin Edition' : 'نسخه مدیریت فروشگاه'}
                 </span>
               </h2>
               <span className="text-xs text-stone-400">
-                افزودن مستقیم اجناس به سایت، ویرایش موجودی و حذف محصولات
+                {isEn
+                  ? 'Add products directly to catalog, adjust inventory and remove items'
+                  : 'افزودن مستقیم اجناس به سایت، ویرایش موجودی و حذف محصولات'}
               </span>
             </div>
           </div>
@@ -225,7 +238,11 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
             }`}
           >
             <Layers size={16} />
-            <span>فهرست و حذف اجناس ({toPersianDigits(products.length)})</span>
+            <span>
+              {isEn
+                ? `Catalog & Delete (${formatDigits(products.length)})`
+                : `فهرست و حذف اجناس (${formatDigits(products.length)})`}
+            </span>
           </button>
 
           <button
@@ -237,19 +254,21 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
             }`}
           >
             <PlusCircle size={16} />
-            <span>+ افزودن محصول جدید به سایت</span>
+            <span>{isEn ? '+ Add New Product to Store' : '+ افزودن محصول جدید به سایت'}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`pb-3 px-3 flex items-center gap-1.5 border-b-2 transition-all cursor-pointer mr-auto ${
+            className={`pb-3 px-3 flex items-center gap-1.5 border-b-2 transition-all cursor-pointer ${
+              isRTL ? 'mr-auto' : 'ml-auto'
+            } ${
               activeTab === 'settings'
                 ? 'border-pink-600 text-pink-600'
                 : 'border-transparent text-stone-600 hover:text-stone-900'
             }`}
           >
             <RotateCcw size={15} />
-            <span>بازنشانی کاتالوگ</span>
+            <span>{isEn ? 'Reset Catalog' : 'بازنشانی کاتالوگ'}</span>
           </button>
         </div>
 
@@ -261,114 +280,129 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
               {/* Search Bar & Quick Stats */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
                 <div className="relative w-full sm:w-80">
-                  <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <Search size={16} className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-stone-400`} />
                   <input
                     type="text"
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
-                    placeholder="جستجو در میان کالاها جهت حذف یا ویرایش..."
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl pr-9 pl-3 py-2 text-xs focus:outline-hidden focus:border-pink-500"
+                    placeholder={isEn ? 'Search products to manage or delete...' : 'جستجو در میان کالاها جهت حذف یا ویرایش...'}
+                    className={`w-full bg-stone-50 border border-stone-200 rounded-xl ${
+                      isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'
+                    } py-2 text-xs focus:outline-hidden focus:border-pink-500`}
                   />
                 </div>
 
                 <div className="text-xs text-stone-500 flex items-center gap-3">
-                  <span>تعداد کل کالاها: <strong className="text-stone-900">{toPersianDigits(products.length)}</strong></span>
+                  <span>
+                    {isEn ? 'Total Items: ' : 'تعداد کل کالاها: '}
+                    <strong className="text-stone-900">{formatDigits(products.length)}</strong>
+                  </span>
                   <span>•</span>
-                  <span>کالاهای موجود: <strong className="text-emerald-600">{toPersianDigits(products.filter(p => p.inStock).length)}</strong></span>
+                  <span>
+                    {isEn ? 'In Stock: ' : 'کالاهای موجود: '}
+                    <strong className="text-emerald-600">
+                      {formatDigits(products.filter((p) => p.inStock).length)}
+                    </strong>
+                  </span>
                 </div>
               </div>
 
               {/* Products Table */}
               <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
                 <div className="divide-y divide-stone-100">
-                  {filteredProducts.map((p) => (
-                    <div
-                      key={p.id}
-                      className="p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:bg-stone-50/80 transition-colors"
-                    >
-                      {/* Image & Title */}
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div
-                          className="w-14 h-18 sm:w-16 sm:h-20 rounded-xl bg-stone-100 bg-cover bg-center shrink-0 border border-stone-200 shadow-2xs"
-                          style={{ backgroundImage: `url(${p.image})` }}
-                        />
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-xs sm:text-sm text-stone-900 truncate">
-                            {p.name}
-                          </h4>
-                          <span className="text-[11px] text-stone-400 block font-sans">
-                            {p.englishName || p.category}
-                          </span>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className="text-xs font-black text-pink-600">
-                              {formatPrice(p.price)}
+                  {filteredProducts.map((p) => {
+                    const pName = isEn && p.englishName ? p.englishName : p.name;
+                    const stockNum = p.stockCount ?? (p.inStock ? 10 : 0);
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:bg-stone-50/80 transition-colors"
+                      >
+                        {/* Image & Title */}
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div
+                            className="w-14 h-18 sm:w-16 sm:h-20 rounded-xl bg-stone-100 bg-cover bg-center shrink-0 border border-stone-200 shadow-2xs"
+                            style={{ backgroundImage: `url(${p.image})` }}
+                          />
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-xs sm:text-sm text-stone-900 truncate">
+                              {pName}
+                            </h4>
+                            <span className="text-[11px] text-stone-400 block font-sans">
+                              {isEn ? (p.name || p.category) : (p.englishName || p.category)}
                             </span>
-                            <span className="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
-                              {p.material.split(' ')[0]}
-                            </span>
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <span className="text-xs font-black text-pink-600">
+                                {formatPrice(p.price)}
+                              </span>
+                              <span className="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+                                {isEn && p.englishMaterial ? p.englishMaterial.split(' ')[0] : p.material.split(' ')[0]}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Stock Toggle & Quantity Adjuster & Delete Action */}
-                      <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap justify-end">
-                        {/* Stock Counter with [-] and [+] */}
-                        <div className="flex items-center bg-stone-100 border border-stone-200 rounded-xl p-0.5 shadow-2xs">
-                          <button
-                            type="button"
-                            onClick={() => onUpdateStockCount?.(p.id, -1)}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-stone-200 text-stone-700 font-black border border-stone-200 transition-colors cursor-pointer text-sm shadow-xs"
-                            title="کاهش یک عدد از موجودی انبار"
-                          >
-                            -
-                          </button>
-                          <div className="text-center px-2 min-w-[54px]">
-                            <span className={`block text-xs font-black ${
-                              (p.stockCount ?? (p.inStock ? 10 : 0)) > 0 ? 'text-stone-900' : 'text-rose-600'
-                            }`}>
-                              {toPersianDigits(p.stockCount ?? (p.inStock ? 10 : 0))}
-                            </span>
-                            <span className="text-[9px] text-stone-400 block -mt-0.5">عدد</span>
+                        {/* Stock Controls & Actions */}
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap justify-end">
+                          <div className="flex items-center bg-stone-100 border border-stone-200 rounded-xl p-0.5 shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => onUpdateStockCount?.(p.id, -1)}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-stone-200 text-stone-700 font-black border border-stone-200 transition-colors cursor-pointer text-sm shadow-xs"
+                              title="-1"
+                            >
+                              -
+                            </button>
+                            <div className="text-center px-2 min-w-[54px]">
+                              <span className={`block text-xs font-black ${
+                                stockNum > 0 ? 'text-stone-900' : 'text-rose-600'
+                              }`}>
+                                {formatDigits(stockNum)}
+                              </span>
+                              <span className="text-[9px] text-stone-400 block -mt-0.5">
+                                {isEn ? 'pcs' : 'عدد'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateStockCount?.(p.id, 1)}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-stone-200 text-stone-700 font-black border border-stone-200 transition-colors cursor-pointer text-sm shadow-xs"
+                              title="+1"
+                            >
+                              +
+                            </button>
                           </div>
+
+                          {/* In-stock toggle */}
                           <button
-                            type="button"
-                            onClick={() => onUpdateStockCount?.(p.id, 1)}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-stone-200 text-stone-700 font-black border border-stone-200 transition-colors cursor-pointer text-sm shadow-xs"
-                            title="افزایش یک عدد به موجودی انبار"
+                            onClick={() => onToggleStock(p.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                              stockNum > 0
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                            }`}
                           >
-                            +
+                            {stockNum > 0 ? (isEn ? '✓ In Stock' : '✓ موجود') : (isEn ? 'Out of Stock' : 'ناموجود')}
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => onDeleteProduct(p.id)}
+                            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-rose-200 hover:border-rose-600 cursor-pointer shadow-2xs"
+                            title={t.card.deleteAdmin}
+                          >
+                            <Trash2 size={14} />
+                            <span>{t.card.delete}</span>
                           </button>
                         </div>
-
-                        {/* In-stock toggle button */}
-                        <button
-                          onClick={() => onToggleStock(p.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                            (p.stockCount ?? (p.inStock ? 10 : 0)) > 0
-                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
-                          }`}
-                          title="تغییر وضعیت موجودی"
-                        >
-                          {(p.stockCount ?? (p.inStock ? 10 : 0)) > 0 ? '✓ موجود' : 'ناموجود'}
-                        </button>
-
-                        {/* DELETE BUTTON */}
-                        <button
-                          onClick={() => onDeleteProduct(p.id)}
-                          className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-rose-200 hover:border-rose-600 cursor-pointer shadow-2xs"
-                          title="حذف دائمی محصول از سایت"
-                        >
-                          <Trash2 size={14} />
-                          <span>حذف از سایت</span>
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {filteredProducts.length === 0 && (
                     <div className="p-8 text-center text-stone-400 text-xs">
-                      کالایی یافت نشد.
+                      {isEn ? 'No products found.' : 'کالایی یافت نشد.'}
                     </div>
                   )}
                 </div>
@@ -376,7 +410,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
             </div>
           )}
 
-          {/* TAB 2: ADD PRODUCT / WORDPRESS PAGE BUILDER FORM */}
+          {/* TAB 2: ADD PRODUCT FORM */}
           {activeTab === 'add' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Form (8 cols) */}
@@ -384,10 +418,12 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                 <div className="border-b border-stone-100 pb-3">
                   <h3 className="font-black text-stone-900 text-base flex items-center gap-1.5">
                     <PlusCircle size={18} className="text-pink-600" />
-                    <span>مشخصات کالای جدید (انتشار در سایت)</span>
+                    <span>{isEn ? 'New Product Specifications' : 'مشخصات کالای جدید (انتشار در سایت)'}</span>
                   </h3>
                   <p className="text-xs text-stone-400 mt-0.5">
-                    فرم استاندارد تعریف محصول؛ پس از ثبت بلافاصله در ویترین و دسته‌بندی‌های سایت قرار می‌گیرد.
+                    {isEn
+                      ? 'Standard product creation form; once saved it immediately appears in boutique showcase.'
+                      : 'فرم استاندارد تعریف محصول؛ پس از ثبت بلافاصله در ویترین و دسته‌بندی‌های سایت قرار می‌گیرد.'}
                   </p>
                 </div>
 
@@ -396,26 +432,26 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        نام محصول (فارسی) *
+                        {isEn ? 'Product Name (Persian) *' : 'نام محصول (فارسی) *'}
                       </label>
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="مثال: پیراهن لینن ساحلی فلورال"
+                        placeholder="پیراهن لینن ساحلی فلورال"
                         className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-hidden focus:border-pink-500 focus:bg-white"
                       />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        نام انگلیسی (برای ژورنال و سئو)
+                        {isEn ? 'English Name (for Journal & SEO)' : 'نام انگلیسی (برای ژورنال و سئو)'}
                       </label>
                       <input
                         type="text"
                         value={englishName}
                         onChange={(e) => setEnglishName(e.target.value)}
-                        placeholder="مثال: Summer Linen Floral Dress"
+                        placeholder="Summer Linen Floral Dress"
                         dir="ltr"
                         className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-hidden focus:border-pink-500 focus:bg-white text-left font-sans"
                       />
@@ -426,30 +462,30 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        دسته‌بندی بوتیک *
+                        {isEn ? 'Boutique Category *' : 'دسته‌بندی بوتیک *'}
                       </label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value as any)}
                         className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-hidden focus:border-pink-500 focus:bg-white"
                       >
-                        <option value="women">پوشاک بانوان (Women)</option>
-                        <option value="men">استایل آقایان (Men)</option>
-                        <option value="shoes">کفش و صندل (Shoes)</option>
-                        <option value="bags">کیف ساحلی و دستی (Bags)</option>
-                        <option value="accessories">اکسسوری و عینک (Accessories)</option>
+                        <option value="women">{isEn ? "Women's Fashion (women)" : 'پوشاک بانوان (Women)'}</option>
+                        <option value="men">{isEn ? "Men's Style (men)" : 'استایل آقایان (Men)'}</option>
+                        <option value="shoes">{isEn ? 'Shoes & Slides (shoes)' : 'کفش و صندل (Shoes)'}</option>
+                        <option value="bags">{isEn ? 'Beach & Hand Bags (bags)' : 'کیف ساحلی و دستی (Bags)'}</option>
+                        <option value="accessories">{isEn ? 'Accessories & Shades (accessories)' : 'اکسسوری و عینک (Accessories)'}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        برچسب ویژه (بج نمایش)
+                        {isEn ? 'Display Badge / Tag' : 'برچسب ویژه (بج نمایش)'}
                       </label>
                       <input
                         type="text"
                         value={tag}
                         onChange={(e) => setTag(e.target.value)}
-                        placeholder="جدید، پرفروش، حراج تابستانه"
+                        placeholder={isEn ? 'NEW, Best-seller, Summer Sale' : 'جدید، پرفروش، حراج تابستانه'}
                         className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-hidden focus:border-pink-500 focus:bg-white"
                       />
                     </div>
@@ -459,7 +495,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        قیمت فروش (تومان) *
+                        {isEn ? 'Price (Tomans) *' : 'قیمت فروش (تومان) *'}
                       </label>
                       <input
                         type="number"
@@ -472,7 +508,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                     </div>
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        قیمت قبل از تخفیف (اختیاری)
+                        {isEn ? 'Original Price (Optional)' : 'قیمت قبل از تخفیف (اختیاری)'}
                       </label>
                       <input
                         type="number"
@@ -488,20 +524,20 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        جنس پارچه و الیاف
+                        {isEn ? 'Fabric & Material' : 'جنس پارچه و الیاف'}
                       </label>
                       <input
                         type="text"
                         value={material}
                         onChange={(e) => setMaterial(e.target.value)}
-                        placeholder="۱۰۰٪ لینن ارگانیک شسته شده"
+                        placeholder={isEn ? '100% Organic Linen' : '۱۰۰٪ لینن ارگانیک شسته شده'}
                         className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-hidden focus:border-pink-500 focus:bg-white"
                       />
                     </div>
 
                     <div>
                       <label className="text-xs font-bold text-stone-700 block mb-1">
-                        موجودی اولیه انبار (تعداد) *
+                        {isEn ? 'Initial Stock Count *' : 'موجودی اولیه انبار (تعداد) *'}
                       </label>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center bg-stone-50 border border-stone-200 rounded-xl overflow-hidden">
@@ -509,18 +545,18 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                             type="button"
                             onClick={() => setInitialStockCount((c) => Math.max(0, c - 1))}
                             className="w-9 h-9 flex items-center justify-center text-stone-700 hover:bg-stone-200 font-black text-sm cursor-pointer"
-                            title="کاهش یک عدد"
+                            title="-1"
                           >
                             -
                           </button>
                           <span className="w-16 text-center font-black text-xs text-stone-900 bg-white py-2 border-x border-stone-200">
-                            {toPersianDigits(initialStockCount)} عدد
+                            {formatDigits(initialStockCount)} {isEn ? 'pcs' : 'عدد'}
                           </span>
                           <button
                             type="button"
                             onClick={() => setInitialStockCount((c) => c + 1)}
                             className="w-9 h-9 flex items-center justify-center text-stone-700 hover:bg-stone-200 font-black text-sm cursor-pointer"
-                            title="افزایش یک عدد"
+                            title="+1"
                           >
                             +
                           </button>
@@ -528,24 +564,23 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${
                           initialStockCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                         }`}>
-                          {initialStockCount > 0 ? 'موجود در انبار' : 'ناموجود'}
+                          {initialStockCount > 0 ? (isEn ? 'In Stock' : 'موجود در انبار') : (isEn ? 'Out of Stock' : 'ناموجود')}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Product Image Upload Area */}
+                  {/* Image Upload Area */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-xs font-bold text-stone-700">
-                        تصویر و عکس محصول *
+                        {isEn ? 'Product Image *' : 'تصویر و عکس محصول *'}
                       </label>
                       <span className="text-[11px] text-stone-400">
-                        فرمت‌های JPG، PNG، WEBP (حداکثر ۸ مگابایت)
+                        {isEn ? 'JPG, PNG, WEBP (Max 8 MB)' : 'فرمت‌های JPG، PNG، WEBP (حداکثر ۸ مگابایت)'}
                       </span>
                     </div>
 
-                    {/* Hidden file input */}
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -559,7 +594,6 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                     />
 
                     {!imageUrl ? (
-                      /* Drag and Drop Upload Zone */
                       <div
                         onDragOver={(e) => {
                           e.preventDefault();
@@ -588,10 +622,10 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                         </div>
                         <div className="space-y-1">
                           <p className="font-bold text-stone-800 text-xs sm:text-sm">
-                            برای بارگذاری عکس کلیک کنید یا تصویر را به اینجا بکشید و رها کنید
+                            {isEn ? 'Click to upload image or drag and drop here' : 'برای بارگذاری عکس کلیک کنید یا تصویر را به اینجا بکشید و رها کنید'}
                           </p>
                           <p className="text-[11px] text-stone-400">
-                            عکس محصول به صورت مستقیم از سیستم یا گوشی شما آپلود می‌شود
+                            {isEn ? 'Upload directly from your device' : 'عکس محصول به صورت مستقیم از سیستم یا گوشی شما آپلود می‌شود'}
                           </p>
                         </div>
                         <button
@@ -599,11 +633,10 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                           className="bg-stone-900 hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer mt-1"
                         >
                           <FileImage size={15} />
-                          <span>انتخاب و بارگذاری عکس محصول</span>
+                          <span>{isEn ? 'Browse & Upload Photo' : 'انتخاب و بارگذاری عکس محصول'}</span>
                         </button>
                       </div>
                     ) : (
-                      /* Uploaded Image Preview Box */
                       <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                           <div
@@ -613,14 +646,14 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold mb-1">
                               <CheckCircle2 size={14} className="text-emerald-600" />
-                              <span>تصویر با موفقیت بارگذاری شد</span>
+                              <span>{isEn ? 'Image uploaded successfully' : 'تصویر با موفقیت بارگذاری شد'}</span>
                             </div>
                             <span className="text-xs text-stone-700 font-medium truncate block max-w-xs" dir="ltr">
-                              {imageFileName || 'تصویر محصول'}
+                              {imageFileName || 'product.jpg'}
                             </span>
                             {imageFileSize && (
                               <span className="text-[11px] text-stone-400 block mt-0.5">
-                                حجم فایل: {imageFileSize}
+                                {isEn ? 'File size: ' : 'حجم فایل: '} {imageFileSize}
                               </span>
                             )}
                           </div>
@@ -633,7 +666,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                             className="flex items-center gap-1 text-xs font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200 px-3 py-2 rounded-xl transition-colors cursor-pointer"
                           >
                             <RefreshCw size={13} />
-                            <span>تغییر عکس</span>
+                            <span>{isEn ? 'Change Photo' : 'تغییر عکس'}</span>
                           </button>
                           <button
                             type="button"
@@ -646,7 +679,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                             className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-2 rounded-xl transition-colors cursor-pointer"
                           >
                             <Trash2 size={13} />
-                            <span>حذف عکس</span>
+                            <span>{isEn ? 'Remove Photo' : 'حذف عکس'}</span>
                           </button>
                         </div>
                       </div>
@@ -660,14 +693,15 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                     )}
                   </div>
 
-                  {/* Color Selector */}
+                  {/* Colors */}
                   <div>
                     <label className="text-xs font-bold text-stone-700 block mb-1.5">
-                      رنگ‌های قابل انتخاب:
+                      {isEn ? 'Available Colors:' : 'رنگ‌های قابل انتخاب:'}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {PRESET_COLORS.map((c, i) => {
                         const isSelected = selectedColors.some((item) => item.name === c.name);
+                        const cName = isEn && c.englishName ? c.englishName : c.name;
                         return (
                           <button
                             key={i}
@@ -683,7 +717,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                               className="w-3.5 h-3.5 rounded-full border border-stone-300"
                               style={{ backgroundColor: c.hex }}
                             />
-                            <span>{c.name}</span>
+                            <span>{cName}</span>
                             {isSelected && <Check size={12} className="text-pink-600" />}
                           </button>
                         );
@@ -691,10 +725,10 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                     </div>
                   </div>
 
-                  {/* Size Selector */}
+                  {/* Sizes */}
                   <div>
                     <label className="text-xs font-bold text-stone-700 block mb-1.5">
-                      سایزهای موجود:
+                      {isEn ? 'Available Sizes:' : 'سایزهای موجود:'}
                     </label>
                     <div className="flex flex-wrap gap-1.5">
                       {ALL_SIZES.map((s) => {
@@ -720,7 +754,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                   {/* Description */}
                   <div>
                     <label className="text-xs font-bold text-stone-700 block mb-1">
-                      توضیحات معرفی لباس
+                      {isEn ? 'Product Description' : 'توضیحات معرفی لباس'}
                     </label>
                     <textarea
                       rows={2}
@@ -735,7 +769,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                     {formSuccess ? (
                       <div className="bg-emerald-50 border border-emerald-300 text-emerald-700 p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                         <CheckCircle2 size={16} />
-                        <span>محصول با موفقیت در فروشگاه منتشر شد! در حال انتقال...</span>
+                        <span>{isEn ? 'Product published successfully! Redirecting...' : 'محصول با موفقیت در فروشگاه منتشر شد! در حال انتقال...'}</span>
                       </div>
                     ) : (
                       <button
@@ -743,7 +777,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                         className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-pink-600/30 flex items-center justify-center gap-2 text-sm cursor-pointer transition-all"
                       >
                         <PlusCircle size={18} />
-                        <span>انتشار و اضافه کردن محصول به ویترین فروشگاه</span>
+                        <span>{isEn ? 'Publish and Add Product to Boutique Showcase' : 'انتشار و اضافه کردن محصول به ویترین فروشگاه'}</span>
                       </button>
                     )}
                   </div>
@@ -754,10 +788,9 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
               <div className="lg:col-span-4 space-y-3">
                 <div className="bg-stone-900 text-white p-3 rounded-xl text-xs font-bold flex items-center gap-1.5">
                   <Sparkles size={14} className="text-pink-400" />
-                  <span>پیش‌نمایش زنده در ویترین سایت</span>
+                  <span>{isEn ? 'Live Showcase Preview' : 'پیش‌نمایش زنده در ویترین سایت'}</span>
                 </div>
 
-                {/* Simulated Product Card */}
                 <div className="bg-white rounded-2xl overflow-hidden border border-stone-200 shadow-md">
                   <div className="relative aspect-3/4 bg-stone-100 flex items-center justify-center">
                     {imageUrl ? (
@@ -768,18 +801,22 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                     ) : (
                       <div className="flex flex-col items-center justify-center text-stone-400 p-6 text-center gap-2">
                         <ImageIcon size={36} className="text-stone-300" />
-                        <span className="text-xs font-medium">تصویر بارگذاری‌شده در اینجا پیش‌نمایش می‌شود</span>
+                        <span className="text-xs font-medium">
+                          {isEn ? 'Uploaded image will preview here' : 'تصویر بارگذاری‌شده در اینجا پیش‌نمایش می‌شود'}
+                        </span>
                       </div>
                     )}
                     {tag && (
-                      <span className="absolute top-3 right-3 bg-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <span className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} bg-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>
                         {tag}
                       </span>
                     )}
                   </div>
-                  <div className="p-4 space-y-2 text-right">
+                  <div className={`p-4 space-y-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                     <span className="text-[10px] text-pink-600 font-bold block">{material}</span>
-                    <h4 className="font-bold text-stone-900 text-sm">{name || 'نام محصول شما'}</h4>
+                    <h4 className="font-bold text-stone-900 text-sm">
+                      {isEn ? (englishName || name || 'Product Name') : (name || 'نام محصول شما')}
+                    </h4>
                     <div className="flex items-center gap-1">
                       {selectedColors.map((c, i) => (
                         <span
@@ -812,22 +849,24 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                 <AlertTriangle size={28} />
               </div>
               <h3 className="font-extrabold text-stone-900 text-base">
-                بازنشانی اجناس فروشگاه به داده‌های اولیه
+                {isEn ? 'Reset Boutique Catalog to Defaults' : 'بازنشانی اجناس فروشگاه به داده‌های اولیه'}
               </h3>
               <p className="text-xs text-stone-500 leading-relaxed">
-                در صورتی که محصولاتی را حذف یا اضافه کرده‌اید و می‌خواهید کاتالوگ فروشگاه به ۱۲ محصول پیش‌فرض ژورنالی برگردد، از این دکمه استفاده کنید.
+                {isEn
+                  ? 'If you have added or removed items and want to reset the store back to the 12 original curated items, click below.'
+                  : 'در صورتی که محصولاتی را حذف یا اضافه کرده‌اید و می‌خواهید کاتالوگ فروشگاه به ۱۲ محصول پیش‌فرض ژورنالی برگردد، از این دکمه استفاده کنید.'}
               </p>
               <button
                 onClick={() => {
-                  if (window.confirm('آیا از بازنشانی کامل محصولات به حالت اولیه مطمئن هستید؟')) {
+                  if (window.confirm(isEn ? 'Are you sure you want to reset all products to default?' : 'آیا از بازنشانی کامل محصولات به حالت اولیه مطمئن هستید؟')) {
                     onResetToDefaults();
-                    alert('کاتالوگ با موفقیت به حالت پیش‌فرض بازگردانده شد.');
+                    alert(isEn ? 'Catalog reset to defaults successfully.' : 'کاتالوگ با موفقیت به حالت پیش‌فرض بازگردانده شد.');
                     setActiveTab('list');
                   }
                 }}
                 className="bg-stone-900 hover:bg-black text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
-                تایید و بازنشانی محصولات
+                {isEn ? 'Confirm & Reset Catalog' : 'تایید و بازنشانی محصولات'}
               </button>
             </div>
           )}

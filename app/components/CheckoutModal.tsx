@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, ShieldCheck, CheckCircle2, CreditCard, Truck, ArrowLeft, Loader2 } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, CreditCard, Truck, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { CartItem, OrderDetails } from '../types';
-import { formatPrice, toPersianDigits } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ interface CheckoutModalProps {
   onOrderComplete: () => void;
 }
 
-const IRAN_PROVINCES = [
+const IRAN_PROVINCES_FA = [
   'تهران',
   'اصفهان',
   'فارس',
@@ -33,6 +33,26 @@ const IRAN_PROVINCES = [
   'هرمزگان',
 ];
 
+const IRAN_PROVINCES_EN = [
+  'Tehran',
+  'Isfahan',
+  'Fars',
+  'Razavi Khorasan',
+  'Gilan',
+  'Mazandaran',
+  'East Azerbaijan',
+  'Khuzestan',
+  'Alborz',
+  'Qom',
+  'Yazd',
+  'Kerman',
+  'Hamedan',
+  'Kermanshah',
+  'Markazi',
+  'Bushehr',
+  'Hormozgan',
+];
+
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose,
@@ -40,13 +60,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   totalAmount,
   onOrderComplete,
 }) => {
+  const { t, formatPrice, formatDigits, isRTL, language } = useLanguage();
+  const isEn = language === 'en';
+
   if (!isOpen) return null;
 
   const [formData, setFormData] = useState<OrderDetails>({
     fullName: '',
     phone: '',
-    province: 'تهران',
-    city: 'تهران',
+    province: isEn ? 'Tehran' : 'تهران',
+    city: isEn ? 'Tehran' : 'تهران',
     postalCode: '',
     address: '',
     paymentMethod: 'shaparak',
@@ -57,15 +80,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
 
+  const provinces = isEn ? IRAN_PROVINCES_EN : IRAN_PROVINCES_FA;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName || !formData.phone || !formData.address) {
-      alert('لطفاً نام، شماره موبایل و آدرس پستی دقیق را وارد فرمایید.');
+      alert(t.checkout.requiredAlert);
       return;
     }
 
     setIsSubmitting(true);
-    // Simulate Iranian gateway processing
+    // Simulate gateway processing
     setTimeout(() => {
       const code = `GLM-${Math.floor(100000 + Math.random() * 900000)}`;
       setTrackingCode(code);
@@ -76,9 +101,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn text-right">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
       <div
-        className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+        className={`relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col ${
+          isRTL ? 'text-right' : 'text-left'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -89,16 +116,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             <div>
               <h2 className="font-extrabold text-stone-900 text-base">
-                {orderPlaced ? 'تایید و ثبت نهایی سفارش' : 'مشخصات ارسال و تسویه حساب'}
+                {orderPlaced ? t.checkout.titleSuccess : t.checkout.title}
               </h2>
               <span className="text-xs text-stone-500">
-                مبلغ کل سفارش: <strong>{formatPrice(totalAmount)}</strong>
+                {t.checkout.totalAmount} <strong>{formatPrice(totalAmount)}</strong>
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-200/60 transition-colors"
+            className="p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-200/60 transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
@@ -113,49 +140,54 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <CheckCircle2 size={44} />
               </div>
               <h3 className="text-2xl font-black text-stone-900">
-                سفارش شما با موفقیت در بوتیک ثبت شد!
+                {t.checkout.successTitle}
               </h3>
               <p className="text-sm text-stone-600 max-w-md mx-auto">
-                بسته‌بندی اختصاصی سفارش شما آغاز گردید و پیامک تایید و کد رهگیری مرسوله تیپاکس به
-                شماره <strong>{toPersianDigits(formData.phone)}</strong> ارسال خواهد شد.
+                {t.checkout.successDesc}
               </p>
 
-              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 max-w-md mx-auto text-right space-y-2.5 text-xs sm:text-sm">
+              <div className={`bg-stone-50 border border-stone-200 rounded-2xl p-5 max-w-md mx-auto ${
+                isRTL ? 'text-right' : 'text-left'
+              } space-y-2.5 text-xs sm:text-sm`}>
                 <div className="flex justify-between border-b border-stone-200 pb-2">
-                  <span className="text-stone-500">شماره رهگیری سفارش:</span>
+                  <span className="text-stone-500">{t.checkout.trackingCode}</span>
                   <span className="font-mono font-bold text-pink-600 text-base">
                     {trackingCode}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-500">گیرنده:</span>
+                  <span className="text-stone-500">{isEn ? 'Recipient:' : 'گیرنده:'}</span>
                   <span className="font-bold text-stone-800">{formData.fullName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-500">شهر مقصد:</span>
+                  <span className="text-stone-500">{isEn ? 'Destination:' : 'شهر مقصد:'}</span>
                   <span className="font-bold text-stone-800">
                     {formData.province} - {formData.city}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-500">روش پرداخت:</span>
+                  <span className="text-stone-500">{isEn ? 'Payment:' : 'روش پرداخت:'}</span>
                   <span className="font-bold text-emerald-600">
                     {formData.paymentMethod === 'shaparak'
-                      ? 'درگاه پرداخت امن شاپرک (موفق)'
-                      : 'کارت به کارت'}
+                      ? (isEn ? 'Shaparak Gateway (Verified)' : 'درگاه پرداخت امن شاپرک (موفق)')
+                      : (isEn ? 'Bank Card Transfer' : 'کارت به کارت')}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-stone-200 font-extrabold text-stone-900">
-                  <span>مبلغ پرداختی:</span>
+                  <span>{isEn ? 'Paid Amount:' : 'مبلغ پرداختی:'}</span>
                   <span className="text-pink-600">{formatPrice(totalAmount)}</span>
                 </div>
               </div>
 
+              <p className="text-xs text-stone-400">
+                {t.checkout.smsNote}
+              </p>
+
               <button
                 onClick={onClose}
-                className="mt-4 bg-stone-900 hover:bg-black text-white px-8 py-3 rounded-full text-sm font-bold shadow-md transition-colors"
+                className="mt-4 bg-stone-900 hover:bg-black text-white px-8 py-3 rounded-full text-sm font-bold shadow-md transition-colors cursor-pointer"
               >
-                بازگشت به فروشگاه بوتیک
+                {t.checkout.backHome}
               </button>
             </div>
           ) : (
@@ -165,28 +197,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-stone-700 block mb-1">
-                    نام و نام خانوادگی تحویل‌گیرنده *
+                    {t.checkout.fullName}
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder="مثال: مریم محمدی"
+                    placeholder={t.checkout.fullNamePlaceholder}
                     className="w-full border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-hidden focus:border-pink-500"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-stone-700 block mb-1">
-                    شماره تلفن همراه (جهت پیامک رهگیری) *
+                    {t.checkout.phone}
                   </label>
                   <input
                     type="tel"
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                    placeholder={t.checkout.phonePlaceholder}
                     className="w-full border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-hidden focus:border-pink-500"
                   />
                 </div>
@@ -195,13 +227,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Province & City */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-stone-700 block mb-1">استان *</label>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">{t.checkout.province}</label>
                   <select
                     value={formData.province}
                     onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                     className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-xs sm:text-sm focus:outline-hidden focus:border-pink-500 bg-white"
                   >
-                    {IRAN_PROVINCES.map((prov) => (
+                    {provinces.map((prov) => (
                       <option key={prov} value={prov}>
                         {prov}
                       </option>
@@ -210,24 +242,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-stone-700 block mb-1">شهر *</label>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">{t.checkout.city}</label>
                   <input
                     type="text"
                     required
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="مثال: تهران"
+                    placeholder={isEn ? 'e.g. Tehran' : 'مثال: تهران'}
                     className="w-full border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-hidden focus:border-pink-500"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-stone-700 block mb-1">کد پستی</label>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">{t.checkout.postalCode}</label>
                   <input
                     type="text"
                     value={formData.postalCode}
                     onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                    placeholder="۱۰ رقمی"
+                    placeholder={t.checkout.postalCodePlaceholder}
                     className="w-full border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-hidden focus:border-pink-500"
                   />
                 </div>
@@ -236,14 +268,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Full Address */}
               <div>
                 <label className="text-xs font-bold text-stone-700 block mb-1">
-                  نشانی پستی دقیق *
+                  {t.checkout.address}
                 </label>
                 <textarea
                   required
                   rows={2}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="خیابان، کوچه، پلاک، واحد..."
+                  placeholder={t.checkout.addressPlaceholder}
                   className="w-full border border-stone-200 rounded-xl p-3 text-xs sm:text-sm focus:outline-hidden focus:border-pink-500"
                 />
               </div>
@@ -251,7 +283,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Payment Gateway */}
               <div className="pt-2">
                 <label className="text-xs font-bold text-stone-800 block mb-2">
-                  شیوه پرداخت:
+                  {t.checkout.paymentMethod}:
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label
@@ -270,8 +302,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     />
                     <CreditCard size={20} className="text-pink-600" />
                     <div className="text-xs">
-                      <strong className="block text-stone-800">درگاه پرداخت آنلاین شاپرک</strong>
-                      <span className="text-stone-500">تمامی کارت‌های عضو شتاب بانکی</span>
+                      <strong className="block text-stone-800">{t.checkout.shaparak}</strong>
+                      <span className="text-stone-500">{t.checkout.shaparakDesc}</span>
                     </div>
                   </label>
 
@@ -291,8 +323,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     />
                     <ShieldCheck size={20} className="text-stone-700" />
                     <div className="text-xs">
-                      <strong className="block text-stone-800">کارت به کارت</strong>
-                      <span className="text-stone-500">انتقال وجه و ارسال فیش واریزی</span>
+                      <strong className="block text-stone-800">{t.checkout.card}</strong>
+                      <span className="text-stone-500">{t.checkout.cardDesc}</span>
                     </div>
                   </label>
                 </div>
@@ -302,23 +334,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="pt-4 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs text-stone-500">
                   <ShieldCheck size={18} className="text-emerald-600" />
-                  <span>تضمین امنیت پرداخت و اطلاعات توسط شبکه شاپرک</span>
+                  <span>{isEn ? 'Secured by 256-bit SSL Gateway' : 'تضمین امنیت پرداخت و اطلاعات توسط شبکه شاپرک'}</span>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-pink-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  className="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-pink-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      <span>در حال انتقال به درگاه بانکی...</span>
+                      <span>{t.checkout.processing}</span>
                     </>
                   ) : (
                     <>
-                      <span>پرداخت نهایی {formatPrice(totalAmount)}</span>
-                      <ArrowLeft size={16} />
+                      <span>{t.checkout.submitBtn} ({formatPrice(totalAmount)})</span>
+                      {isRTL ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
                     </>
                   )}
                 </button>

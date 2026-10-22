@@ -1,7 +1,10 @@
+export type Language = 'fa' | 'en';
+
 export type ProductCategory = 'all' | 'women' | 'men' | 'shoes' | 'bags' | 'accessories';
 
 export interface ProductColor {
   name: string;
+  englishName?: string;
   hex: string;
 }
 
@@ -16,9 +19,12 @@ export interface Product {
   image: string;
   gallery?: string[];
   description: string;
+  englishDescription?: string;
   material: string;
+  englishMaterial?: string;
   colors: ProductColor[];
   sizes: string[];
+  englishSizes?: string[];
   rating: number;
   reviewsCount: number;
   isNew?: boolean;
@@ -26,6 +32,7 @@ export interface Product {
   inStock: boolean;
   stockCount?: number;
   tag?: string;
+  englishTag?: string;
 }
 
 export interface CartItem {
@@ -45,11 +52,29 @@ export interface CategoryCardData {
   itemCount: number;
 }
 
+export interface HeroSlide {
+  id: number;
+  badge: string;
+  englishBadge?: string;
+  title: string;
+  englishTitle?: string;
+  subtitle: string;
+  description: string;
+  englishDescription?: string;
+  buttonText: string;
+  englishButtonText?: string;
+  link: string;
+  image: string;
+}
+
 export interface Testimonial {
   id: string;
   name: string;
+  englishName?: string;
   city: string;
+  englishCity?: string;
   comment: string;
+  englishComment?: string;
   rating: number;
   avatar: string;
   verified: boolean;
@@ -74,6 +99,7 @@ export interface UserOrder {
   itemsCount: number;
   totalAmount: number;
   status: 'در حال بسته‌بندی' | 'ارسال شده با تیپاکس' | 'تحویل شده';
+  englishStatus?: string;
   trackingCode: string;
 }
 
@@ -87,5 +113,6 @@ export interface User {
 }
 
 export const APP_TYPES = true;
+
 
 
